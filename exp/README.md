@@ -56,6 +56,10 @@ TRIAL_ID=P001 bash scripts/deploy_piper.sh
   （协议第 1 页写的是 20,000 步，登记页填写时需更正）
 - 恢复与净观测确认按纸面形态**存在同一格**（`recovery_net_obs`）：`Y+` / `N+` / `U?` / `—`
 - `failure_reason` 存文字
+- 相机（登记页“相机 1 / 相机 2”）：
+  **CAM1 = 固定俯视 = `observation.images.wrist` = `/dev/video4`**
+  **CAM2 = 臂上前视 = `observation.images.top` = `/dev/video10`**
+  （`top`/`wrist` 这两个键名与实际安装位置相反，是历史命名；导出文件按 CAM1/CAM2 对齐）
 - 补测（X01–X06）暂不录入
 
 ## 待办

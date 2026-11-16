@@ -2,8 +2,8 @@
 """把一次试验的 lerobot 数据集导出成实验记录表约定的三份独立文件。
 
 约定（实验记录表第 2 页「文件关联」）：
-    T001_cam1.mp4        ← observation.images.top
-    T001_cam2.mp4        ← observation.images.wrist
+    T001_cam1.mp4        ← observation.images.wrist（固定俯视，CAM1）
+    T001_cam2.mp4        ← observation.images.top  （臂上前视，CAM2）
     T001_policy.parquet  ← data/**/*.parquet（state / action 日志）
 
 产物写回数据集目录本身，即一次试验一个文件夹。
@@ -14,7 +14,9 @@
       --root exp/data/light_attack/T001 --trial-id T001
 
     # 相机与编号的对应关系不是 top/wrist 时可改
-    ... --cam1 top --cam2 wrist
+    # 实物对应（本机）：CAM1 = 固定俯视 = observation.images.wrist = /dev/video4
+    #                   CAM2 = 臂上前视 = observation.images.top  = /dev/video10
+    ... --cam1 wrist --cam2 top
 """
 
 from __future__ import annotations
@@ -35,8 +37,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True, help="试验数据集目录，如 exp/data/light_attack/T001")
     ap.add_argument("--trial-id", required=True, help="试验编号，如 T001")
-    ap.add_argument("--cam1", default="top", help="cam1 对应的相机键，默认 top")
-    ap.add_argument("--cam2", default="wrist", help="cam2 对应的相机键，默认 wrist")
+    ap.add_argument("--cam1", default="wrist", help="CAM1 对应的相机键；本机 CAM1=固定俯视=wrist")
+    ap.add_argument("--cam2", default="top", help="CAM2 对应的相机键；本机 CAM2=臂上前视=top")
     ap.add_argument("--crf", default="20")
     ap.add_argument("--manifest", action="store_true", help="额外写 <trial>_manifest.json")
     ap.add_argument("--ckpt", default="", help="写入 manifest 的 checkpoint 路径")

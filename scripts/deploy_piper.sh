@@ -155,10 +155,16 @@ lerobot-record \
 # ---------------------------------------------------------------------------
 if [ -d "$DATASET_DIR" ]; then
   echo "→ 导出试验资产：$TRIAL_ID"
+  # 导出进程偶发在解释器退出阶段 abort（exit 134），但产物此时已写完，
+  # 所以按产物是否存在判定成败，而不是看退出码。
   "$PY" "$ROOT/tools/export_trial_assets.py" \
-      --root "$DATASET_DIR" --trial-id "$TRIAL_ID" --manifest --ckpt "$CKPT" \
-    || { echo "⚠️  导出失败，数据本身已落盘。手动补跑：" >&2
-         echo "   $PY tools/export_trial_assets.py --root $DATASET_DIR --trial-id $TRIAL_ID --manifest --ckpt $CKPT" >&2; }
+      --root "$DATASET_DIR" --trial-id "$TRIAL_ID" --manifest --ckpt "$CKPT" || true
+  if [ -f "$DATASET_DIR/${TRIAL_ID}_policy.parquet" ]; then
+    echo "✅ 导出完成：${TRIAL_ID}_cam1.mp4 / ${TRIAL_ID}_cam2.mp4 / ${TRIAL_ID}_policy.parquet"
+  else
+    echo "⚠️  导出失败，数据本身已落盘。手动补跑：" >&2
+    echo "   $PY tools/export_trial_assets.py --root $DATASET_DIR --trial-id $TRIAL_ID --manifest --ckpt $CKPT" >&2
+  fi
 else
   echo "⚠️  没有生成数据集目录（可能未采到 episode），跳过导出：$DATASET_DIR" >&2
 fi
