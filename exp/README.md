@@ -11,15 +11,15 @@ exp/
 ├── rollout_records_100.orig-20261116.csv  改列前的原始副本（仅备份）
 └── data/
     ├── light_attack/                    正式试验（T001–T100，对应记录表）
-    │   ├── T001/
+    │   ├── eval_T003/
     │   │   ├── data/  videos/  meta/    lerobot 原生数据集（state/action + 两路视频）
-    │   │   ├── T001_cam1.mp4            导出：top 相机
-    │   │   ├── T001_cam2.mp4            导出：wrist 相机
-    │   │   ├── T001_policy.parquet      导出：state/action 日志
-    │   │   └── T001_manifest.json       导出：本试验清单
-    │   └── T002/ …
+    │   │   ├── T003_cam1.mp4            导出：top 相机
+    │   │   ├── T003_cam2.mp4            导出：wrist 相机
+    │   │   ├── T003_policy.parquet      导出：state/action 日志
+    │   │   └── T003_manifest.json       导出：本试验清单
+    │   └── eval_T006/ …
     └── pilot/                           预实验（P001…，**不写入记录表**）
-        └── P001/ …
+        └── eval_P001/ …
 ```
 
 `data/` 已在 `exp/.gitignore` 中忽略，记录表 CSV 仍随仓库保留。
@@ -36,16 +36,19 @@ TRIAL_ID=T003 bash scripts/deploy_piper.sh
 TRIAL_ID=P001 bash scripts/deploy_piper.sh
 ```
 
-| 编号格式 | 落盘位置 | 是否进记录表 |
-|---|---|---|
-| `T` + 3 位数字 | `exp/data/light_attack/<TRIAL_ID>/` | 是 |
-| `P` + 3 位数字 | `exp/data/pilot/<TRIAL_ID>/` | 否 |
+| 编号格式 | repo_id | 落盘位置 | 是否进记录表 |
+|---|---|---|---|
+| `T` + 3 位数字 | `light_attack/eval_<TRIAL_ID>` | `exp/data/light_attack/eval_T003/` | 是 |
+| `P` + 3 位数字 | `pilot/eval_<TRIAL_ID>` | `exp/data/pilot/eval_P001/` | 否 |
+
+> 目录名带 `eval_` 不是笔误：lerobot 的 `sanity_check_dataset_name` 要求**带策略录制时
+> repo_id 必须正好两段、且第二段以 `eval_` 开头**，否则启动即报错。
 
 - 数据写入（`HF_LEROBOT_HOME` 默认指向 `exp/data`）
 - 试验目录**已存在时脚本拒绝运行**，避免两次试验混进同一个目录
 - 跑完自动调用 `tools/export_trial_assets.py` 导出 `T001_cam1/cam2/policy`
 - 导出失败不影响已落盘的数据，手动补跑：
-  `python tools/export_trial_assets.py --root exp/data/light_attack/T001 --trial-id T001 --manifest`
+  `python tools/export_trial_assets.py --root exp/data/light_attack/eval_T003 --trial-id T003 --manifest`
 
 ## 记录表口径（当前约定）
 

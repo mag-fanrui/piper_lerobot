@@ -28,7 +28,10 @@ case "$TRIAL_ID" in
   P[0-9][0-9][0-9]) REPO_SUBDIR="pilot" ;;          # 预实验，不写入记录表
   *) echo "❌ TRIAL_ID 应为 T001（正式）或 P001（预实验），收到：$TRIAL_ID" >&2; exit 1 ;;
 esac
-REPO_ID="${REPO_ID:-$REPO_SUBDIR/$TRIAL_ID}"
+# lerobot 的硬性约束（control_utils.sanity_check_dataset_name）：
+#   带策略录制时，repo_id 必须正好两段，且第二段以 eval_ 开头。
+#   所以数据目录形如 exp/data/light_attack/eval_T003/
+REPO_ID="${REPO_ID:-$REPO_SUBDIR/eval_$TRIAL_ID}"
 EPISODES="${EPISODES:-1}"
 EPISODE_TIME_S="${EPISODE_TIME_S:-60}"
 RESET_TIME_S="${RESET_TIME_S:-15}"
