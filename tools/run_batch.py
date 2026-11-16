@@ -38,6 +38,21 @@ DEFAULT_CSV = ROOT / "exp" / "rollout_records_100.csv"
 WAREHOUSE = ROOT / "exp" / "data" / "light_attack"
 KEEP = {"trial_id", "layout", "repeat", "position", "condition", "random_u"}
 COND_NAME = {"A": "Clean", "B": "Full", "C": "Random", "D": "抓取前", "E": "放置前"}
+SMOOTHING_ENV = ROOT / "configs" / "smoothing.env"
+
+
+def load_smoothing() -> dict[str, str]:
+    """读取单一口径的平滑性参数（deploy_piper.sh 也用同一份）。"""
+    out: dict[str, str] = {}
+    if not SMOOTHING_ENV.is_file():
+        return out
+    for line in SMOOTHING_ENV.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        out[k.strip()] = v.strip()
+    return out
 
 
 def load_rows(path: Path) -> tuple[list[str], list[dict]]:
@@ -129,6 +144,12 @@ def main() -> None:
     if args.dry_run:
         print("（--dry-run：只打印计划，未启动任何实验）")
         return
+
+    sm = load_smoothing()
+    if sm:
+        print(f" 平滑参数：限幅 {sm.get('MAX_STEP_RAD_DEFAULT', '?')} rad/步，"
+              f"EMA joint {sm.get('JOINT_ALPHA_DEFAULT', '?')} / gripper {sm.get('GRIPPER_ALPHA_DEFAULT', '?')}，"
+              f"n_action_steps {sm.get('N_ACTION_STEPS_DEFAULT', '?')}")
 
     op = os.environ.get("OPERATOR", "").strip()
     print(f" 操作员：{op or '（沿用上次录入的值）'}")

@@ -36,10 +36,14 @@ EPISODES="${EPISODES:-1}"
 EPISODE_TIME_S="${EPISODE_TIME_S:-60}"
 RESET_TIME_S="${RESET_TIME_S:-15}"
 DRY_RUN="${DRY_RUN:-true}"
-MAX_STEP_RAD="${MAX_STEP_RAD:-0.05}"
-JOINT_ALPHA="${JOINT_ALPHA:-0.15}"      # 平滑系数：越小越平滑、滞后越大（1.0=关闭）
-GRIPPER_ALPHA="${GRIPPER_ALPHA:-0.4}"
-N_ACTION_STEPS="${N_ACTION_STEPS:-25}"
+# 平滑性参数：默认值统一取自 configs/smoothing.env（单一口径，可用环境变量单次覆盖）
+SMOOTHING_ENV="$ROOT/configs/smoothing.env"
+# shellcheck disable=SC1090
+[ -f "$SMOOTHING_ENV" ] && . "$SMOOTHING_ENV"
+MAX_STEP_RAD="${MAX_STEP_RAD:-${MAX_STEP_RAD_DEFAULT:-0.05}}"
+JOINT_ALPHA="${JOINT_ALPHA:-${JOINT_ALPHA_DEFAULT:-0.15}}"      # 越小越平滑、滞后越大（1.0=关闭）
+GRIPPER_ALPHA="${GRIPPER_ALPHA:-${GRIPPER_ALPHA_DEFAULT:-0.4}}"
+N_ACTION_STEPS="${N_ACTION_STEPS:-${N_ACTION_STEPS_DEFAULT:-25}}"
 # 起始/结束位姿：默认使用 configs/piper_poses.json 里的 home2
 POSE_NAME="${POSE_NAME:-home2}"
 START_FROM="${START_FROM:-home}"          # home = 连接后先去 home2；current = 原地
@@ -161,7 +165,8 @@ if [ -d "$DATASET_DIR" ]; then
   # 导出进程偶发在解释器退出阶段 abort（exit 134），但产物此时已写完，
   # 所以按产物是否存在判定成败，而不是看退出码。
   "$PY" "$ROOT/tools/export_trial_assets.py" \
-      --root "$DATASET_DIR" --trial-id "$TRIAL_ID" --manifest --ckpt "$CKPT" || true
+      --root "$DATASET_DIR" --trial-id "$TRIAL_ID" --manifest --ckpt "$CKPT" \
+      --params "MAX_STEP_RAD=$MAX_STEP_RAD,JOINT_ALPHA=$JOINT_ALPHA,GRIPPER_ALPHA=$GRIPPER_ALPHA,N_ACTION_STEPS=$N_ACTION_STEPS,DRY_RUN=$DRY_RUN" || true
   if [ -f "$DATASET_DIR/${TRIAL_ID}_policy.parquet" ]; then
     echo "✅ 导出完成：${TRIAL_ID}_cam1.mp4 / ${TRIAL_ID}_cam2.mp4 / ${TRIAL_ID}_policy.parquet"
   else

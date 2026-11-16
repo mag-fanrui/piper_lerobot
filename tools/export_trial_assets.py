@@ -42,6 +42,7 @@ def main() -> None:
     ap.add_argument("--crf", default="20")
     ap.add_argument("--manifest", action="store_true", help="额外写 <trial>_manifest.json")
     ap.add_argument("--ckpt", default="", help="写入 manifest 的 checkpoint 路径")
+    ap.add_argument("--params", default="", help="写入 manifest 的运行参数，形如 k=v,k=v")
     args = ap.parse_args()
 
     root = Path(args.root).expanduser().resolve()
@@ -100,6 +101,7 @@ def main() -> None:
             "total_frames": info.get("total_frames"),
             "fps": info.get("fps"),
             "checkpoint": args.ckpt,
+            "params": dict(kv.split("=", 1) for kv in args.params.split(",") if "=" in kv),
             "files": sorted(p.name for p in root.glob(f"{args.trial_id}_*")),
         }
         (root / f"{args.trial_id}_manifest.json").write_text(

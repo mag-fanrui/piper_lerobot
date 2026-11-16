@@ -101,6 +101,20 @@ python tools/fill_trial_record.py --trial-id T003 \
     --set outcome_S_F_V=F --set failure_stage=G --set failure_reason=空抓
 ```
 
+## 平滑性默认值（单一口径）
+
+正式实验的部署参数统一在 `configs/smoothing.env` 定义，单条脚本和批量脚本都取这一份：
+
+| 参数 | 默认 | 含义 |
+|---|---|---|
+| `MAX_STEP_RAD` | 0.05 | 每步关节限幅（rad），越小越稳、跟踪越滞后 |
+| `JOINT_ALPHA` | 0.15 | 关节 EMA 平滑（1.0 = 关闭） |
+| `GRIPPER_ALPHA` | 0.4 | 夹爪 EMA 平滑 |
+| `N_ACTION_STEPS` | 25 | 每个 chunk 实际执行步数（chunk_size 保持 50） |
+
+- 单次覆盖：`JOINT_ALPHA=0.3 TRIAL_ID=T010 bash scripts/deploy_piper.sh`
+- 每次试验实际生效的值会写进该试验的 `<编号>_manifest.json` 的 `params` 字段
+
 ## 记录表口径（当前约定）
 
 - 模型：SmolVLA 微调 **15,000 步**，`smolvla_deploy/basket_v2_20261115/policy`
