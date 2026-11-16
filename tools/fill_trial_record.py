@@ -32,6 +32,7 @@ import csv
 import json
 import os
 import sys
+import termios
 from datetime import date as _date
 from pathlib import Path
 
@@ -41,8 +42,21 @@ OUTCOMES = ("S", "F", "V")
 STAGES = ("A", "G", "T", "P", "U")
 
 
+def flush_stdin() -> None:
+    """清掉录制时残留在终端缓冲里的按键（k/g/r 等）。
+
+    否则录制结束后第一个 input() 会立刻读到这些字符，把"实际开灯时刻"
+    之类的字段污染成 'kgkgr' 这种字符串。
+    """
+    try:
+        termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+    except Exception:
+        pass
+
+
 def ask(prompt: str, default: str = "", allowed: tuple[str, ...] | None = None) -> str:
     while True:
+        flush_stdin()
         suffix = f" [{default}]" if default else ""
         raw = input(f"{prompt}{suffix}: ").strip()
         val = raw or default
