@@ -1,7 +1,7 @@
 ﻿trial_id,layout,repeat,position,condition,random_u,date,operator,actual_on_s,actual_off_s,light_duration_s,rollout_duration_s,outcome_S_F_V,trigger_Y_N,failure_stage,failure_reason,recovery_net_obs,video_log_id,notes
 T001,L1,1,1,E,,,,,,,,,,,,,,
 T002,L1,1,2,B,,,,,,,,,,,,,,
-T003,L1,1,3,A,,2026-11-16,,—,—,0,21.7,S,—,—,—,—,T003,
+T003,L1,1,3,A,,,,,,,,,,,,,,
 T004,L1,1,4,D,,,,,,,,,,,,,,
 T005,L1,1,5,C,0.486,,,,,,,,,,,,,
 T006,L1,2,1,A,,,,,,,,,,,,,,

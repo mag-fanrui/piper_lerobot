@@ -115,6 +115,8 @@ def main() -> None:
     args = ap.parse_args()
 
     csv_path = Path(args.csv).expanduser()
+    # 注意：每条试验的录入由 fill_trial_record.py（另一个进程）写文件，
+    # 所以这里任何写回之前都必须重新读盘，否则会用旧快照把别人写的行冲掉。
     header, rows = load_rows(csv_path)
     by_id = {r["trial_id"]: r for r in rows}
 
@@ -187,18 +189,36 @@ def main() -> None:
                 print(f"\n⚠️  {tid} 的录制进程退出码 {rc}（可能中途取消）")
             act = ask(" 回车=下一条 / r=重跑本条 / x=退出 > ", ("", "r", "x"))
             if act == "r":
+                # 重跑会删数据，要求明确确认
+                try:
+                    sure = input(f"  重跑 {tid} 会删除其数据和记录，输入 yes 确认: ").strip().lower()
+                except EOFError:
+                    sure = ""
+                if sure != "yes":
+                    print("  已取消重跑，继续下一条")
+                    break
                 if remove_trial_dir(tid):
-                    clear_row(row)
+                    header, rows = load_rows(csv_path)      # 重新读盘再写，避免冲掉别的行
+                    cur = next(r for r in rows if r["trial_id"] == tid)
+                    clear_row(cur)
                     save_rows(csv_path, header, rows)
+                    by_id = {r["trial_id"]: r for r in rows}
                     print(f"  {tid} 的数据与记录已清空，重新开始本条")
                     continue
                 print("  取消删除，继续下一条")
             break
 
+        # 先核对本条是否真的录入了（录入由子进程完成，这里必须重新读盘）
+        header, rows = load_rows(csv_path)
+        by_id = {r["trial_id"]: r for r in rows}
+        if (by_id[tid].get("outcome_S_F_V") or "").strip():
+            done.append(tid)
+        else:
+            print(f"  ⚠️  {tid} 的数据已落盘，但记录表里没有录入（可事后补："
+                  f"python tools/fill_trial_record.py --trial-id {tid} --dataset-root {WAREHOUSE / f'eval_{tid}'}）")
+
         if act == "x":
             break
-        if (row.get("outcome_S_F_V") or "").strip():
-            done.append(tid)
         idx += 1
 
     print("\n" + "=" * 62)
