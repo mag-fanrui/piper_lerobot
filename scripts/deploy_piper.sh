@@ -24,10 +24,11 @@ if [ -z "$TRIAL_ID" ]; then
   exit 1
 fi
 case "$TRIAL_ID" in
-  T[0-9][0-9][0-9]) ;;
-  *) echo "❌ TRIAL_ID 应为 T001 这种形式，收到：$TRIAL_ID" >&2; exit 1 ;;
+  T[0-9][0-9][0-9]) REPO_SUBDIR="light_attack" ;;   # 正式试验，对应记录表 T001–T100
+  P[0-9][0-9][0-9]) REPO_SUBDIR="pilot" ;;          # 预实验，不写入记录表
+  *) echo "❌ TRIAL_ID 应为 T001（正式）或 P001（预实验），收到：$TRIAL_ID" >&2; exit 1 ;;
 esac
-REPO_ID="${REPO_ID:-light_attack/$TRIAL_ID}"
+REPO_ID="${REPO_ID:-$REPO_SUBDIR/$TRIAL_ID}"
 EPISODES="${EPISODES:-1}"
 EPISODE_TIME_S="${EPISODE_TIME_S:-60}"
 RESET_TIME_S="${RESET_TIME_S:-15}"
