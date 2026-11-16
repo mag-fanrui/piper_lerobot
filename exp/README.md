@@ -111,7 +111,7 @@ python tools/fill_trial_record.py --trial-id T003 \
 | `MAX_STEP_RAD` | 0.05 | 每步关节限幅（rad），越小越稳、跟踪越滞后 |
 | `JOINT_ALPHA` | 0.15 | 关节 EMA 平滑（1.0 = 关闭） |
 | `GRIPPER_ALPHA` | 0.4 | 夹爪 EMA 平滑 |
-| `N_ACTION_STEPS` | 50 | 每个 chunk 实际执行步数（= chunk_size 50，执行满整个 chunk 再重规划） |
+| `N_ACTION_STEPS` | 40 | 每个 chunk 实际执行步数（chunk_size 50，执行 40 步后重规划） |
 
 - 单次覆盖：`JOINT_ALPHA=0.3 TRIAL_ID=T010 bash scripts/deploy_piper.sh`
 - 每次试验实际生效的值会写进该试验的 `<编号>_manifest.json` 的 `params` 字段
