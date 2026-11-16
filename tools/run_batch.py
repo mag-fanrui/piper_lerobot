@@ -7,8 +7,8 @@
 按键约定：
 
     每条开始前：  回车 = 开始本条      s = 跳过本条      x = 退出批次
-    每条结束后：  回车 = 下一条        r = 重跑本条      x = 退出批次
-    （录制过程中：n = 提前结束本条，r = 作废重录，q = 结束录制进程）
+    每条结束后：  回车 = 下一条        d = 重跑本条      x = 退出批次
+    （录制过程中：r = 提前结束本条，← = 作废重录，Esc = 停止录制）
 
 用法::
 
@@ -30,6 +30,7 @@ import os
 import shutil
 import subprocess
 import sys
+import termios
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -93,8 +94,21 @@ def show_card(tid: str, csv_path: Path) -> None:
                     "--trial-id", tid, "--csv", str(csv_path)], check=False)
 
 
+def flush_stdin() -> None:
+    """清掉终端输入缓冲里残留的按键。
+
+    录制时按的 r（提前结束）不会被 lerobot-record 读走，而是留在 pty 缓冲里；
+    如果不清掉，这里第一个 input() 会立刻读到这个 r，被误当成“重跑本条”。
+    """
+    try:
+        termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+    except Exception:
+        pass
+
+
 def ask(prompt: str, allowed: tuple[str, ...]) -> str:
     while True:
+        flush_stdin()
         try:
             ans = input(prompt).strip().lower()
         except EOFError:
@@ -156,7 +170,7 @@ def main() -> None:
     op = os.environ.get("OPERATOR", "").strip()
     print(f" 操作员：{op or '（沿用上次录入的值）'}")
     print(" 每条开始前：回车开始 / s 跳过 / x 退出")
-    print(" 录制中：n 提前结束本条，r 作废重录，q 结束录制")
+    print(" 录制中：r 提前结束本条，← 作废重录，Esc 停止录制")
 
     done: list[str] = []
     env = dict(os.environ, DRY_RUN="false")
@@ -187,10 +201,11 @@ def main() -> None:
             rc = subprocess.run(["bash", str(Path(args.deploy).expanduser())], cwd=ROOT, env=env).returncode
             if rc != 0:
                 print(f"\n⚠️  {tid} 的录制进程退出码 {rc}（可能中途取消）")
-            act = ask(" 回车=下一条 / r=重跑本条 / x=退出 > ", ("", "r", "x"))
-            if act == "r":
+            act = ask(" 回车=下一条 / d=重跑本条 / x=退出 > ", ("", "d", "x"))
+            if act == "d":
                 # 重跑会删数据，要求明确确认
                 try:
+                    flush_stdin()
                     sure = input(f"  重跑 {tid} 会删除其数据和记录，输入 yes 确认: ").strip().lower()
                 except EOFError:
                     sure = ""
