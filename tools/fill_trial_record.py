@@ -85,6 +85,34 @@ def load_key_events(dataset_root: Path, trial_id: str) -> dict[str, list[float]]
     return out
 
 
+def light_intervals(ev: dict[str, list[float]], t0: float | None,
+                    duration: float | None) -> tuple[list[tuple[float, float]], float | None]:
+    """把多次 k/g 配对成光照区间（k 开、g 关），返回区间列表与段长。
+
+    允许多轮开关：k1..g1, k2..g2 …；重复按 k 视为继续照明，不重开区间。
+    若最后一次 k 之后没有 g，且已知总时长，则按「亮到结束」计入。
+    """
+    if t0 is None:
+        return [], None
+    marks = [(t, key) for key in ("k", "g") for t in ev[key]]
+    marks.sort()
+    spans: list[tuple[float, float]] = []
+    open_at: float | None = None
+    for t, key in marks:
+        if key == "k":
+            if open_at is None:
+                open_at = t
+        elif open_at is not None:
+            spans.append((round(open_at - t0, 1), round(t - t0, 1)))
+            open_at = None
+    if open_at is not None and duration is not None:
+        spans.append((round(open_at - t0, 1), round(duration, 1)))
+    if not spans:
+        return [], 0.0
+    total = round(sum(b - a for a, b in spans), 1)
+    return spans, total
+
+
 def rollout_duration(dataset_root: Path) -> float | None:
     info = dataset_root / "meta" / "info.json"
     if not info.is_file():
@@ -171,15 +199,17 @@ def main() -> None:
     # ---------- 人判字段 ----------
     ev = load_key_events(Path(args.dataset_root).expanduser(), args.trial_id)
     t0 = ev["start"][0] if ev["start"] else None
-    k_t = ev["k"][0] if ev["k"] else None
-    g_t = ev["g"][0] if ev["g"] else None
-    measured_on = round(k_t - t0, 1) if (t0 is not None and k_t is not None) else None
-    measured_off = round(g_t - t0, 1) if (t0 is not None and g_t is not None) else None
-    if measured_on is not None or measured_off is not None:
-        print(f"  按键实测：开灯 {measured_on if measured_on is not None else '—'} s"
-              f" / 关灯 {measured_off if measured_off is not None else '—'} s"
-              + (f"（总时长 {duration:.1f} s）" if duration else ""))
-    elif k_t is not None or g_t is not None:
+    spans, measured_light = light_intervals(ev, t0, duration)
+    measured_on = f"{spans[0][0]:.1f}" if spans else None
+    measured_off = f"{spans[-1][1]:.1f}" if spans else None
+    if spans:
+        segs = " + ".join(f"{b - a:.1f}" for a, b in spans)
+        print(f"  光照 {len(spans)} 段（开/关 s）：" + ", ".join(f"{a}→{b}" for a, b in spans))
+        print(f"  开灯总时长 = {segs} = {measured_light:.1f} s"
+              + (f"（本条总时长 {duration:.1f} s）" if duration else ""))
+        if measured_light and duration and measured_light > duration + 0.2:
+            print("  ⚠️  开灯总时长超过本条时长，请核对按键记录", file=sys.stderr)
+    elif ev["k"] or ev["g"]:
         print("  ⚠️  有按键记录但缺 t=0 锚点（start），时间无法换算成秒", file=sys.stderr)
 
     if cond in ("C", "D", "E"):
@@ -190,14 +220,15 @@ def main() -> None:
         else:
             triggered = put("trigger_Y_N", "是否触发（Y/N）", "Y", ("Y", "N"))
         if triggered == "Y":
-            on_def = "" if measured_on is None else f"{measured_on:.1f}"
-            off_def = "" if measured_off is None else f"{measured_off:.1f}"
+            on_def = measured_on or ""
+            off_def = measured_off or ""
             if cond in ("D", "E"):
-                print("  （取按键实测时刻；回车即接受，也可手动改）")
+                print("  （开灯=首段起点、关灯=末段终点、灯亮=各段之和；回车接受，可改）")
             on = put("actual_on_s", "实际开灯时刻 / 秒", on_def)
             off = put("actual_off_s", "实际关灯时刻 / 秒", off_def)
             try:
-                dur_light = float(off) - float(on)
+                dur_light = (measured_light if measured_light is not None
+                             else float(off) - float(on))
                 if dur_light < 0:
                     print(f"  ⚠️  关灯 {off}s 早于开灯 {on}s，请核对", file=sys.stderr)
                 auto["light_duration_s"] = f"{dur_light:.1f}"
