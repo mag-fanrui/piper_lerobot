@@ -50,6 +50,32 @@ TRIAL_ID=P001 bash scripts/deploy_piper.sh
 - 导出失败不影响已落盘的数据，手动补跑：
   `python tools/export_trial_assets.py --root exp/data/light_attack/eval_T003 --trial-id T003 --manifest`
 
+## 跑完的记录录入
+
+正式试验跑完，脚本会自动调用 `tools/fill_trial_record.py` 追问少量字段并写回本表
+（预实验 `P###` 不录入）。**只需要人判的**：
+
+| 字段 | 何时问 |
+|---|---|
+| `outcome_S_F_V` | 每条都问（S/F/V） |
+| `failure_stage` / `failure_reason` | 结局是 F 时（成功自动填 `—`） |
+| `trigger_Y_N` | 仅 D/E 问是否到达触发阈值 |
+| `actual_on_s` / `actual_off_s` | 仅 C/D/E 且已触发时 |
+| `recovery_net_obs` | 仅 C/D/E 且已触发时（如 `N+` / `Y+` / `U?` / `—`） |
+| `operator` / `notes` | 可回车取默认（操作员沿用上次） |
+
+**自动推导**：`date`、`rollout_duration_s`（帧数÷fps）、`light_duration_s`、
+`video_log_id`，以及 A 的 `—/—/0/—/—`、B 的 `on=0`+`灯亮=总时长`+`trigger=Y`+`恢复=—`、
+D/E 未触发时的 `—/—/0/N/—`。
+
+事后补录或修正（`-y` = 不追问、未指定字段取默认）：
+
+```bash
+python tools/fill_trial_record.py --trial-id T003 \
+    --dataset-root exp/data/light_attack/eval_T003 \
+    --set outcome_S_F_V=F --set failure_stage=G --set failure_reason=空抓
+```
+
 ## 记录表口径（当前约定）
 
 - 模型：SmolVLA 微调 **15,000 步**，`smolvla_deploy/basket_v2_20261115/policy`

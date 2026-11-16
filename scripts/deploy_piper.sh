@@ -168,3 +168,27 @@ if [ -d "$DATASET_DIR" ]; then
 else
   echo "⚠️  没有生成数据集目录（可能未采到 episode），跳过导出：$DATASET_DIR" >&2
 fi
+
+# ---------------------------------------------------------------------------
+# 正式试验（T###）：把必须人判的结果录入记录表。
+# 预实验（P###）不录；总时长、灯亮时长、A/B 的固定值等由脚本自动推导。
+# ---------------------------------------------------------------------------
+if [ -d "$DATASET_DIR" ]; then
+  case "$TRIAL_ID" in
+    T[0-9][0-9][0-9])
+      echo
+      echo "============================================================"
+      echo " 录入记录表：exp/rollout_records_100.csv（直接回车取默认）"
+      echo "============================================================"
+      if [ -t 0 ]; then
+        "$PY" "$ROOT/tools/fill_trial_record.py" \
+              --trial-id "$TRIAL_ID" --dataset-root "$DATASET_DIR" \
+              --csv "$ROOT/exp/rollout_records_100.csv" \
+          || { echo "⚠️  录入未完成，稍后可补跑：" >&2
+               echo "   $PY tools/fill_trial_record.py --trial-id $TRIAL_ID --dataset-root $DATASET_DIR" >&2; }
+      else
+        echo "（当前不是交互终端，跳过录入；稍后手动补跑上面的命令）"
+      fi
+      ;;
+  esac
+fi
