@@ -235,7 +235,11 @@ def main() -> None:
             except ValueError:
                 print("  ⚠️  开/关灯不是数字，灯亮时长留空", file=sys.stderr)
                 auto["light_duration_s"] = ""
-            put("recovery_net_obs", "恢复+净观测确认（如 N+ / Y+ / U? / —）", DASH)
+            if cond == "C":
+                put("recovery_net_obs", "恢复+净观测确认（如 N+ / Y+ / U? / —）", DASH)
+            else:
+                # D/E 的恢复栏不采集（用户口径），显式标注而不是留 —
+                manual["recovery_net_obs"] = "未采集"
         else:
             auto.update({"actual_on_s": DASH, "actual_off_s": DASH, "light_duration_s": "0",
                          "recovery_net_obs": DASH})

@@ -139,7 +139,8 @@ D/E（以及后续 C）需要在录制中标记光照时刻，录制进程内会
 - 模型：SmolVLA 微调 **15,000 步**，`smolvla_deploy/basket_v2_20261115/policy`
   （协议第 1 页写的是 20,000 步，登记页填写时需更正）
 - 恢复与净观测确认按纸面形态**存在同一格**（`recovery_net_obs`）：`Y+` / `N+` / `U?` / `—`
-- `failure_reason` 存文字
+- `failure_reason` 存文字（B/D 组用协议编码 1–7）
+- `recovery_net_obs`：A/B 填 `—`；**D/E 一律标「未采集」**（该维度不采集）；C 仍按 Y/N/U+后缀 判定
 - 相机（登记页“相机 1 / 相机 2”）：
   **CAM1 = 固定俯视 = `observation.images.wrist` = `/dev/video4`**
   **CAM2 = 臂上前视 = `observation.images.top` = `/dev/video10`**
