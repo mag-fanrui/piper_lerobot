@@ -52,6 +52,29 @@ TRIAL_ID=P001 bash scripts/deploy_piper.sh
 - 导出失败不影响已落盘的数据，手动补跑：
   `python tools/export_trial_assets.py --root exp/data/light_attack/eval_T003 --trial-id T003 --manifest`
 
+## 按条件连续跑（批量）
+
+一组试验按条件连续跑，用 `tools/run_batch.py`（每条仍走单条脚本：录制 → 导出 → 录入）：
+
+```bash
+python tools/run_batch.py --condition A              # A 组 20 条，按表内顺序
+python tools/run_batch.py --condition A --start T013 # 从 T013 开始
+python tools/run_batch.py --condition A --limit 4    # 只跑 4 条
+python tools/run_batch.py --condition A --dry-run    # 只看计划
+OPERATOR=fr python tools/run_batch.py --condition A  # 指定操作员
+```
+
+按键：
+
+| 位置 | 键 | 含义 |
+|---|---|---|
+| 每条开始前 | 回车 / `s` / `x` | 开始本条 / 跳过 / 退出批次 |
+| 每条结束后 | 回车 / `r` / `x` | 下一条 / 重跑本条（删本条数据+清该行）/ 退出 |
+| 录制过程中 | `n` / `r` / `q` | 提前结束本条 / 作废重录 / 结束录制进程 |
+
+- 已完成（目录已存在）的试验会**自动跳过**，不会覆盖
+- 重跑时只删 `exp/data/light_attack/eval_<编号>/`，路径与编号不符会拒绝删除
+
 ## 跑完的记录录入
 
 正式试验跑完，脚本会自动调用 `tools/fill_trial_record.py` 追问少量字段并写回本表

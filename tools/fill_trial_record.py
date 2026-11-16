@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import sys
 from datetime import date as _date
 from pathlib import Path
@@ -77,6 +78,10 @@ def rollout_duration(dataset_root: Path) -> float | None:
 
 
 def last_operator(rows: list[dict]) -> str:
+    """默认操作员：优先 $OPERATOR，否则沿用表里最近一条非空值。"""
+    env = os.environ.get("OPERATOR", "").strip()
+    if env:
+        return env
     for row in reversed(rows):
         if (row.get("operator") or "").strip():
             return row["operator"].strip()
