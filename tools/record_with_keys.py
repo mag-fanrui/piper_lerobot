@@ -8,8 +8,12 @@
 环境变量：
     LEROBOT_KEYLOG   记录文件路径（JSONL）。不设则不记录，行为与原 CLI 完全一致。
 
-事件格式：``{"key": "k"|"g", "t": <perf_counter 秒>}``，同进程同一时钟，
-所以两条记录之间的**差值**是准确的（不需要与 episode 起点对齐）。
+事件格式：``{"key": "start"|"k"|"g", "t": <perf_counter 秒>}``
+
+- ``start``：第一帧写入的时刻，即 episode 的 t=0 锚点
+- ``k`` / ``g``：操作员按下的开灯 / 关灯时刻
+
+四者同进程同一时钟，所以 ``k - start``、``g - start`` 就是相对秒数。
 """
 
 from __future__ import annotations
@@ -20,6 +24,14 @@ import sys
 import time
 
 
+def _log(path: str, key: str, t: float | None = None) -> None:
+    try:
+        with open(path, "a") as f:
+            f.write(json.dumps({"key": key, "t": round(t if t is not None else time.perf_counter(), 3)}) + "\n")
+    except Exception:
+        pass
+
+
 def main() -> None:
     log_path = os.environ.get("LEROBOT_KEYLOG")
     if log_path:
@@ -28,14 +40,23 @@ def main() -> None:
         def on_press(key):
             ch = getattr(key, "char", None)
             if ch and ch.lower() in ("k", "g"):
-                try:
-                    with open(log_path, "a") as f:
-                        f.write(json.dumps({"key": ch.lower(),
-                                            "t": round(time.perf_counter(), 3)}) + "\n")
-                except Exception:
-                    pass
+                _log(log_path, ch.lower())
 
         keyboard.Listener(on_press=on_press).start()
+
+        # 以「第一帧写入」作为 episode 的 t=0 锚点（与按键共用同一时钟）
+        from lerobot.datasets.lerobot_dataset import LeRobotDataset
+
+        _orig_add_frame = LeRobotDataset.add_frame
+        _state = {"logged": False}
+
+        def _add_frame(self, frame):
+            if not _state["logged"]:
+                _state["logged"] = True
+                _log(log_path, "start")
+            return _orig_add_frame(self, frame)
+
+        LeRobotDataset.add_frame = _add_frame
 
     from lerobot.scripts.lerobot_record import main as record_main
 

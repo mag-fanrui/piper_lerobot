@@ -69,7 +69,7 @@ def save_csv(path: Path, header: list[str], rows: list[dict]) -> None:
 def load_key_events(dataset_root: Path, trial_id: str) -> dict[str, list[float]]:
     """读取录制期间记录的 k/g 时刻（同进程 perf_counter，差值可直接用）。"""
     path = dataset_root / f"{trial_id}_events.jsonl"
-    out: dict[str, list[float]] = {"k": [], "g": []}
+    out: dict[str, list[float]] = {"start": [], "k": [], "g": []}
     if not path.is_file():
         return out
     for line in path.read_text().splitlines():
@@ -170,14 +170,17 @@ def main() -> None:
 
     # ---------- 人判字段 ----------
     ev = load_key_events(Path(args.dataset_root).expanduser(), args.trial_id)
+    t0 = ev["start"][0] if ev["start"] else None
     k_t = ev["k"][0] if ev["k"] else None
     g_t = ev["g"][0] if ev["g"] else None
-    k2g = round(g_t - k_t, 1) if (k_t is not None and g_t is not None) else None
-    if k2g is not None:
-        print(f"  按键测得 k→g = {k2g:.1f} s"
+    measured_on = round(k_t - t0, 1) if (t0 is not None and k_t is not None) else None
+    measured_off = round(g_t - t0, 1) if (t0 is not None and g_t is not None) else None
+    if measured_on is not None or measured_off is not None:
+        print(f"  按键实测：开灯 {measured_on if measured_on is not None else '—'} s"
+              f" / 关灯 {measured_off if measured_off is not None else '—'} s"
               + (f"（总时长 {duration:.1f} s）" if duration else ""))
-    elif ev["k"] or ev["g"]:
-        print("  ⚠️  只记录到一半按键事件，开/关时刻将用默认值", file=sys.stderr)
+    elif k_t is not None or g_t is not None:
+        print("  ⚠️  有按键记录但缺 t=0 锚点（start），时间无法换算成秒", file=sys.stderr)
 
     if cond in ("C", "D", "E"):
         if cond == "C":
@@ -187,19 +190,10 @@ def main() -> None:
         else:
             triggered = put("trigger_Y_N", "是否触发（Y/N）", "Y", ("Y", "N"))
         if triggered == "Y":
-            if cond == "D":
-                on_def = "0.0"                       # 开始时已开灯
-                off_def = f"{k2g:.1f}" if k2g is not None else (f"{duration:.1f}" if duration else "")
-                hint = "（D：开始即开灯，关灯时刻取 k→g 差值）"
-            elif cond == "E":
-                on_def = "0.0"
-                off_def = f"{duration:.1f}" if duration else ""   # 结束时才关灯
-                hint = "（E：结束才关灯，恢复时刻取总时长）"
-            else:
-                on_def = off_def = ""
-                hint = ""
-            if hint:
-                print(f"  {hint}")
+            on_def = "" if measured_on is None else f"{measured_on:.1f}"
+            off_def = "" if measured_off is None else f"{measured_off:.1f}"
+            if cond in ("D", "E"):
+                print("  （取按键实测时刻；回车即接受，也可手动改）")
             on = put("actual_on_s", "实际开灯时刻 / 秒", on_def)
             off = put("actual_off_s", "实际关灯时刻 / 秒", off_def)
             try:
