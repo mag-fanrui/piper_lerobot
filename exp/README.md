@@ -44,6 +44,8 @@ TRIAL_ID=P001 bash scripts/deploy_piper.sh
 > 目录名带 `eval_` 不是笔误：lerobot 的 `sanity_check_dataset_name` 要求**带策略录制时
 > repo_id 必须正好两段、且第二段以 `eval_` 开头**，否则启动即报错。
 
+- 开跑前会打印「本次试验」信息卡：编号、布局/轮/位置、条件规则、现场提示、记录表状态
+  （`tools/show_trial.py`，数据取自本表，现场不用翻表）
 - 数据写入（`HF_LEROBOT_HOME` 默认指向 `exp/data`）
 - 试验目录**已存在时脚本拒绝运行**，避免两次试验混进同一个目录
 - 跑完自动调用 `tools/export_trial_assets.py` 导出 `T001_cam1/cam2/policy`

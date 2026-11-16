@@ -105,6 +105,9 @@ if [ -e "$DATASET_DIR" ]; then
   exit 1
 fi
 
+# 开跑前打印本次试验信息（布局/轮/条件/规则/记录表状态）
+"$PY" "$ROOT/tools/show_trial.py" --trial-id "$TRIAL_ID" --csv "$ROOT/exp/rollout_records_100.csv" || true
+
 echo "============================================================"
 echo " 试验:   $TRIAL_ID"
 echo " 策略:   $CKPT"
