@@ -1,0 +1,45 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ---------- 虚拟环境 ----------
+.venv/
+venv/
+env/
+
+# ---------- 凭据 / 密钥 ----------
+.env
+.env.*
+*.pem
+*.key
+
+# ---------- 本地缓存 / 模型权重（体积大，不入库）----------
+.cache/
+models/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+
+# ---------- 实验产物与数据集 ----------
+outputs/
+exp/data/
+lerobot_data/
+*.mp4
+*.log
+
+# ---------- 编辑器 / 系统 ----------
+.DS_Store
+.idea/
+.vscode/
+*.swp
