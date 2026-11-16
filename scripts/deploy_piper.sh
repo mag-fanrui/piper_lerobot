@@ -128,7 +128,13 @@ if [ "$DRY_RUN" != "true" ]; then
   [ "$ans" = "yes" ] || { echo "已取消"; exit 1; }
 fi
 
-lerobot-record \
+# 记录 k（开灯）/ g（关灯）按键时刻；录制进程内监听，供 D/E 自动填写光照秒数
+EVENTS_TMP="$ROOT/outputs/trial_events/${TRIAL_ID}.jsonl"
+mkdir -p "$(dirname "$EVENTS_TMP")"
+rm -f "$EVENTS_TMP"
+export LEROBOT_KEYLOG="$EVENTS_TMP"
+
+"$PY" "$ROOT/tools/record_with_keys.py" \
   --robot.type=piper_follower \
   --robot.cameras="{
       top:   {type: opencv, index_or_path: $TOP_CAM,  width: 640, height: 480, fps: 30, warmup_s: 3},
@@ -155,11 +161,18 @@ lerobot-record \
   --display_data=true \
   --play_sounds=false
 
+unset LEROBOT_KEYLOG
+
 # ---------------------------------------------------------------------------
 # 跑完后按实验记录表第 2 页「文件关联」导出三份独立文件：
 #   T001_cam1.mp4 / T001_cam2.mp4 / T001_policy.parquet（+ manifest）
 # 导出失败不影响已落盘的数据，可手动补跑（命令见下）。
 # ---------------------------------------------------------------------------
+if [ -s "${EVENTS_TMP:-/nonexistent}" ] && [ -d "$DATASET_DIR" ]; then
+  cp "$EVENTS_TMP" "$DATASET_DIR/${TRIAL_ID}_events.jsonl"
+  echo "→ 光照按键事件：$(wc -l < "$EVENTS_TMP") 条（k=开灯 / g=关灯）"
+fi
+
 if [ -d "$DATASET_DIR" ]; then
   echo "→ 导出试验资产：$TRIAL_ID"
   # 导出进程偶发在解释器退出阶段 abort（exit 134），但产物此时已写完，

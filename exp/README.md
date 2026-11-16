@@ -102,6 +102,20 @@ python tools/fill_trial_record.py --trial-id T003 \
     --set outcome_S_F_V=F --set failure_stage=G --set failure_reason=空抓
 ```
 
+## 光照按键（k / g）
+
+D/E（以及后续 C）需要在录制中标记光照时刻，录制进程内会额外监听两个键：
+
+| 键 | 含义 | 记录内容 |
+|---|---|---|
+| `k` | 开灯 / 计时基准 | 按下时刻的时间戳 |
+| `g` | 关灯 / 恢复时刻 | 按下时刻的时间戳 |
+
+- 由 `tools/record_with_keys.py` 在**录制同一进程内**监听（不改上游代码），
+  事件写入该试验目录的 `<编号>_events.jsonl`
+- 自动化取值：D 的关灯 = `k→g` 差值；E 的关灯 = 总时长；开灯一律 0
+- 与 lerobot 自带的 `r`/`←`/`Esc` 互不冲突
+
 ## 平滑性默认值（单一口径）
 
 正式实验的部署参数统一在 `configs/smoothing.env` 定义，单条脚本和批量脚本都取这一份：
